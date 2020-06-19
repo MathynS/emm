@@ -53,7 +53,7 @@ class Beam:
                 subgroup.coverage = 1 - (np.intersect1d(subgroup.data.index.values, index).size / subgroup.data.index.size)
                 index = np.unique(np.concatenate((index, subgroup.data.index.values)))
             self.sort(attribute='coverage')
-            print([(str(s.description), s.size, s.score, s.coverage) for s in self.candidates])
+            # print([(str(s.description), s.size, s.score, s.coverage) for s in self.candidates])
         self.subgroups = self.candidates[:self.max_items]
         self.scores = [s.score for s in self.subgroups]
         self.min_score = min(self.scores) if self.strategy == 'maximize' else max(self.scores)

@@ -1,4 +1,5 @@
 from typing import Union
+from itertools import chain
 
 
 class Description:
@@ -36,10 +37,11 @@ class Description:
                 else:
                     result.append(f"{key} = {value}")
             length = 0
+            result = " AND ".join(result).split(" ")
             for i, item in enumerate(result):
                 length += len(item)
-                if length > 30:
+                if length > 20:
                     result2.append("<br>")
                     length = 0
                 result2.append(item)
-            return " AND ".join(result2)
+            return " ".join(result2)

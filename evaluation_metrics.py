@@ -1,11 +1,37 @@
 import math
+import warnings
 import pandas as pd
+
 
 from copy import deepcopy
 from scipy.spatial.distance import cosine
 
+
+warnings.filterwarnings('error')
 items = None
 cache = None
+
+
+def cleanup():
+    global items, cache
+    items = None
+    cache = None
+
+
+def entropy(subgroup_target, dataset_target):
+    """
+
+    Args:
+        subgroup_target:
+        dataset_target:
+
+    Returns:
+
+    """
+    n_c = max(1, len(dataset_target) - len(subgroup_target))
+    n = len(subgroup_target)
+    N = len(dataset_target)
+    return -n/N * math.log(n/N) - n_c/N * math.log(n_c/N)
 
 
 def distribution_cosine(subgroup_target, dataset_target, use_complement=False):
@@ -20,6 +46,7 @@ def distribution_cosine(subgroup_target, dataset_target, use_complement=False):
     target = deepcopy(items)
     target[values.index] = values.values
     return math.sqrt(len(subgroup_target)) * cosine(target.values, cache.values), target
+    return entropy(subgroup_target, dataset_target) * cosine(target.values, cache.values), target
 
 
 def avg(collection):
@@ -35,23 +62,10 @@ def r_hat(df, col_x, col_y):
     top = df.apply(lambda row: (row[col_x] - avg_x) * (row[col_y] - avg_y), axis=1)
     bottom_x = df.apply(lambda row: (row[col_x] - avg_x) ** 2, axis=1)
     bottom_y = df.apply(lambda row: (row[col_y] - avg_y) ** 2, axis=1)
-    return top.sum() / math.sqrt(bottom_x.sum() * bottom_y.sum())
-
-
-def entropy(subgroup_target, dataset_target):
-    """
-
-    Args:
-        subgroup_target:
-        dataset_target:
-
-    Returns:
-
-    """
-    n_c = len(dataset_target) - len(subgroup_target)
-    n = len(subgroup_target)
-    N = len(dataset_target)
-    return -n/N * math.log(n/N) - n_c/N * math.log(n_c/N)
+    try:
+        return top.sum() / math.sqrt(bottom_x.sum() * bottom_y.sum())
+    except Warning:  # Both x.sum() and y.sum() equal zero
+        return 0
 
 
 def correlation(subgroup_target, dataset_target, use_complement=False):
@@ -68,6 +82,7 @@ def correlation(subgroup_target, dataset_target, use_complement=False):
     x_col, y_col = list(subgroup_target.columns)
     if cache is None:
         cache = r_hat(dataset_target, x_col, y_col)
+    # print(subgroup_target, x_col, y_col)
     r_gd = r_hat(subgroup_target, x_col, y_col)
     if math.isnan(r_gd):
         return 0, 0

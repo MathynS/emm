@@ -46,9 +46,11 @@ def evaluate_subgroups(queue_from, queue_to, target_columns, dataset_target, sco
         if item == 'done':
             queue_to.put('done')
             break
+        if len(item.data[target_columns]) == 0:
+            continue
         subgroup_target = item.data[target_columns]
         item.score, item.target = score(subgroup_target, dataset_target)
-        item.print()
+        # item.print()
         queue_to.put(item)
 
 

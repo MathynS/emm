@@ -1,12 +1,14 @@
 import pandas as pd
 
+from copy import deepcopy
 from typing import Any, List, Optional, Union
 from multiprocessing import Manager, Process, Queue, cpu_count
 
 from beam import Beam
 from util import downsize
 from subgroup import Subgroup
-from evaluation_metrics import metrics
+from evaluation_metrics import metrics, cleanup
+from visualization import visualizations
 from description import Description
 from workers import create_subgroups, evaluate_subgroups, beam_adder
 
@@ -32,11 +34,12 @@ class EMM:
             self.n_jobs = cpu_count()
         else:
             self.n_jobs = min(n_jobs, cpu_count())
+        self.evaluation_metric = evaluation_metric
         if hasattr(evaluation_metric, '__call__'):
-            self.evaluation_metric = evaluation_metric
+            self.evaluation_function = evaluation_metric
         else:
             try:
-                self.evaluation_metric = metrics[evaluation_metric]
+                self.evaluation_function = metrics[evaluation_metric]
             except KeyError:
                 raise ValueError(f"Nu such metric: {evaluation_metric}")
         self.settings = dict(
@@ -55,9 +58,10 @@ class EMM:
 
     def search(self, data: pd.DataFrame, target_cols: Union[List[str], str], descriptive_cols: List[str] = None):
         print("Start")
-        data, translations = downsize(data)
+        data, translations = downsize(deepcopy(data))
         self.settings['object_cols'] = translations
         self.dataset = Subgroup(data, Description('all'))
+        _, self.dataset.target = self.evaluation_function(data[target_cols], data[target_cols])
         self.beam = Beam(self.dataset, self.settings)
         target_cols = list(target_cols,)
         if descriptive_cols is None:
@@ -72,15 +76,26 @@ class EMM:
             self.make_subgroups(descriptive_cols)
             self.depth -= 1
             self.beam.select_cover_based()
-            print("-" * 10)
         self.beam.decrypt_descriptions(translations)
         self.beam.print()
+        cleanup()
+
+    def visualise(self, vis_type = None, subgroups = 9, cols = 3):
+        if vis_type is None:
+            vis_type = self.evaluation_metric
+        if hasattr(vis_type, '__call__'):
+            vis_type(self.dataset, self.beam.subgroups, self.target_columns, cols, subgroups)
+        else:
+            try:
+                visualizations[vis_type](self.dataset, self.beam.subgroups, self.target_columns, cols, subgroups)
+            except KeyError:
+                raise ValueError(f"Nu such visualization: {vis_type}")
 
     def make_subgroups(self, cols: List[str]):
         beam_workers = []
         for _ in range(self.n_jobs):
             w = Process(target=evaluate_subgroups, args=(evaluate_queue, add_queue, self.target_columns,
-                                                         self.dataset_target, self.evaluation_metric))
+                                                         self.dataset_target, self.evaluation_function))
             w.start()
             beam_workers.append(w)
         for subgroup in self.beam.subgroups:
