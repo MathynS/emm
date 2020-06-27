@@ -1,6 +1,7 @@
 import math
 import warnings
 import pandas as pd
+import statsmodels.api as sm
 
 
 from copy import deepcopy
@@ -89,7 +90,30 @@ def correlation(subgroup_target, dataset_target, use_complement=False):
     return entropy(subgroup_target, dataset_target) * abs(r_gd - cache), r_gd
 
 
+def regression(subgroup_target, dataset_target, use_complement=False):
+    global cache
+    if len(subgroup_target) < 20:
+        return 0, None
+    if len(subgroup_target.columns) != 2:
+        raise ValueError("Correlation metric expects exactly 2 columns as target variables")
+    x_col, y_col = list(subgroup_target.columns)
+    if cache is None:
+        est2 = sm.OLS(dataset_target[y_col], dataset_target[x_col])
+        est2 = est2.fit()
+        cache = est2.summary2().tables[1]['Coef.'][x_col]
+    est = sm.OLS(subgroup_target[y_col], subgroup_target[x_col])
+    est = est.fit()
+    coef = est.summary2().tables[1]['Coef.'][x_col]
+    p = est.summary2().tables[1]['P>|t|'][x_col]
+    if math.isnan(p):
+        return 0, None
+    if (1 - p) < 0.99:
+        return 0, None
+    return abs(coef - cache), None
+
+
 metrics = dict(
     correlation=correlation,
-    distribution_cosine=distribution_cosine
+    distribution_cosine=distribution_cosine,
+    regression=regression
 )

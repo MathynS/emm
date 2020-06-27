@@ -79,7 +79,7 @@ The search method has the following configurable parameters:
 | --- | --- | --- | --- |
 | data | pandas.DataFrame | None | Data(Frame) with data to mine for exceptional patterns.
 | target_cols | str or list | None | Single column or list of columns with the target attributes. Obviously the supplied columns must be present in the provided DataFrame. |
-| descriptive_cols | str ot list | All columns except target columns | Single column or list of columns that can be used to create subgroups withs |
+| descriptive_cols | str ot list | All columns except target columns | Single column or list of columns that can be used to create subgroups with. Specified columns may not overlap with the target columns. |
 
 #### Available models and metrics
 

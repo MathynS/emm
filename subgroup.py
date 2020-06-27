@@ -1,3 +1,4 @@
+import logging
 import pandas as pd
 
 from description import Description
@@ -20,4 +21,4 @@ class Subgroup:
         return len(self.data)
 
     def print(self):
-        print(f"{str(self.description)} {self.score} ({self.size})")
+        logging.debug(f"{str(self.description)} {self.score} ({self.size})")

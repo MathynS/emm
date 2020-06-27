@@ -91,5 +91,6 @@ def distribution(dataset, subgroups, target_columns, cols: int = 3, group_size: 
 
 visualizations = dict(
     correlation=correlation,
-    distribution_cosine=distribution
+    distribution_cosine=distribution,
+    regression=correlation
 )

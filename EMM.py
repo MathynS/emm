@@ -1,3 +1,5 @@
+import sys
+import logging
 import pandas as pd
 
 from copy import deepcopy
@@ -13,6 +15,7 @@ from description import Description
 from workers import create_subgroups, evaluate_subgroups, beam_adder
 
 
+# logger = logging.getLogger(__name__)
 evaluate_queue = Queue()
 add_queue = Queue()
 
@@ -21,20 +24,14 @@ class EMM:
 
     def __init__(self, width: int, depth: int, evaluation_metric: Union[str, callable], n_jobs: int = -1,
                  strategy: str = 'maximize', n_bins: int = 10, bin_strategy: Optional[str] = 'equidepth',
-                 candidate_size: int = None):
-        if not isinstance(width, int):
-            raise ValueError("Invalid type for setting width: only integers are allowed")
-        if isinstance(depth, int):
-            self.depth = depth
-        else:
-            raise ValueError("Invalid type for setting depth: only integers are allowed")
-        if not isinstance(n_jobs, int):
-            raise ValueError("Invalid type for setting n_jobs: only integers are allowed")
-        elif n_jobs == -1:
+                 candidate_size: int = None, log_level=0):
+        logging.basicConfig(filename=None, level=log_level, format='%(asctime)s - %(levelname)s - %(message)s')
+        self.depth = depth
+        self.evaluation_metric = evaluation_metric
+        if n_jobs == -1:
             self.n_jobs = cpu_count()
         else:
             self.n_jobs = min(n_jobs, cpu_count())
-        self.evaluation_metric = evaluation_metric
         if hasattr(evaluation_metric, '__call__'):
             self.evaluation_function = evaluation_metric
         else:
@@ -49,15 +46,31 @@ class EMM:
             bin_strategy=bin_strategy,
             candidate_size=candidate_size
         )
-        if strategy not in ['minimize', 'maximize']:
-            raise ValueError(f"Invalid option for strategy {strategy}, allowed options are `maximize` and `minimize`")
         self.beam = None
         self.target_columns = None
         self.dataset_target = None
         self.dataset = None
 
+    def __setattr__(self, name, value):
+        if name in ['depth', 'n_jobs'] and not isinstance(value, int):
+            raise TypeError(f"Invalid type for setting {name}: only integers are allowed")
+        if name == 'settings':
+            if not isinstance(value['width'], int):
+                raise TypeError("Invalid type for setting width: only integers are allowed")
+            if value['strategy'] not in ['minimize', 'maximize']:
+                raise ValueError(
+                    f"Invalid option for strategy: {value['strategy']}, allowed options are `maximize` and `minimize`")
+            if not isinstance(value['n_bins'], int):
+                raise TypeError(f"Invalid type for setting {value['n_bins']}: only integers are allowed")
+            if not isinstance(value['candidate_size'], int) and value['candidate_size'] is not None:
+                raise TypeError(f"Invalid type for setting {value['n_bins']}: only integers or None are allowed")
+            if not value['bin_strategy'] in ['equiwidth', 'equidepth', None]:
+                raise ValueError(f"Invalid option for bin_strategy: {value['bin_strategy']}, allowed options are "
+                                 f"`equidepth`. `equiwidth` and None")
+        super().__setattr__(name, value)
+
     def search(self, data: pd.DataFrame, target_cols: Union[List[str], str], descriptive_cols: List[str] = None):
-        print("Start")
+        logging.info("Start")
         data, translations = downsize(deepcopy(data))
         self.settings['object_cols'] = translations
         self.dataset = Subgroup(data, Description('all'))
@@ -80,9 +93,11 @@ class EMM:
         self.beam.print()
         cleanup()
 
-    def visualise(self, vis_type = None, subgroups = 9, cols = 3):
+    def visualise(self, vis_type: Union[callable, str] = None, subgroups: int = None, cols: int = 3):
         if vis_type is None:
             vis_type = self.evaluation_metric
+        if subgroups is None:
+            subgroups = len(self.beam.subgroups)
         if hasattr(vis_type, '__call__'):
             vis_type(self.dataset, self.beam.subgroups, self.target_columns, cols, subgroups)
         else:

@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 import pandas as pd
 
@@ -13,7 +14,7 @@ def human_readable_size(data):
 
 
 def downsize(data):
-    print(f"Memory usage before downsizing {human_readable_size(data)}")
+    logging.info(f"Memory usage before downsizing {human_readable_size(data)}")
     translate = dict()
     for column in data.columns:
         if data[column].dtype == object:
@@ -22,5 +23,5 @@ def downsize(data):
             data[column] = pd.to_numeric(data[column], downcast='unsigned')
         elif data[column].dtype in [np.float16, np.float32, np.float64]:
             data[column] = pd.to_numeric(data[column], downcast='float')
-    print(f"Memory usage after downsizing {human_readable_size(data)}")
+    logging.info(f"Memory usage after downsizing {human_readable_size(data)}")
     return data, translate

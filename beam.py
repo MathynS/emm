@@ -1,4 +1,5 @@
 import math
+import logging
 import numpy as np
 import pandas as pd
 
@@ -36,12 +37,12 @@ class Beam:
 
     def sort(self, attribute: str = 'score') -> None:
         if attribute == 'score':
-            self.candidates.sort(key=lambda x: x.score, reverse=self.strategy == 'maximize')
-            self.subgroups.sort(key=lambda x: x.score, reverse=self.strategy == 'maximize')
+            self.candidates.sort(key=lambda x: x.score, reverse=(self.strategy == 'maximize'))
+            self.subgroups.sort(key=lambda x: x.score, reverse=(self.strategy == 'maximize'))
         elif attribute == 'coverage':
             self.candidates.sort(
-                key=lambda x: x.score * (x.coverage if self.strategy == 'maximize' else (1 - x.coverage)),
-                reverse=True)
+                key=lambda x: x.score * (x.coverage if (self.strategy == 'maximize') else (1 - x.coverage)),
+                reverse=(self.strategy == 'maximize'))
         else:
             raise ValueError("Invalid sort attribute")
 
@@ -53,7 +54,6 @@ class Beam:
                 subgroup.coverage = 1 - (np.intersect1d(subgroup.data.index.values, index).size / subgroup.data.index.size)
                 index = np.unique(np.concatenate((index, subgroup.data.index.values)))
             self.sort(attribute='coverage')
-            # print([(str(s.description), s.size, s.score, s.coverage) for s in self.candidates])
         self.subgroups = self.candidates[:self.max_items]
         self.scores = [s.score for s in self.subgroups]
         self.min_score = min(self.scores) if self.strategy == 'maximize' else max(self.scores)
@@ -64,5 +64,6 @@ class Beam:
 
     def print(self):
         self.sort(attribute='coverage')
+        logging.debug("-" * 20)
         for s in self.subgroups:
             s.print()
