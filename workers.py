@@ -1,5 +1,4 @@
 import time
-import logging
 import pandas as pd
 
 from copy import deepcopy
@@ -38,13 +37,11 @@ def create_subgroups(subgroup: Subgroup, column: str, queue: Queue, settings: di
                 queue.put(Subgroup(subset, deepcopy(subgroup.description).extend(column, [lower_bound, upper_bound])))
                 lower_bound = upper_bound
             else:
-                print("waiting")
                 time.sleep(.1)  # Else try again in a .1 second
 
 
 def evaluate_subgroups(queue_from, queue_to, target_columns, dataset_target, score):
     while True:
-        logging.debug("a")
         item = queue_from.get()
         if item == 'done':
             queue_to.put('done')

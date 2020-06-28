@@ -24,7 +24,7 @@ class EMM:
 
     def __init__(self, width: int, depth: int, evaluation_metric: Union[str, callable], n_jobs: int = -1,
                  strategy: str = 'maximize', n_bins: int = 10, bin_strategy: Optional[str] = 'equidepth',
-                 candidate_size: int = None, log_level=0):
+                 candidate_size: int = None, log_level=50):
         logging.basicConfig(filename=None, level=log_level, format='%(asctime)s - %(levelname)s - %(message)s')
         self.depth = depth
         self.evaluation_metric = evaluation_metric
@@ -93,17 +93,20 @@ class EMM:
         self.beam.print()
         cleanup()
 
-    def visualise(self, vis_type: Union[callable, str] = None, subgroups: int = None, cols: int = 3):
+    def visualise(self, vis_type: Union[callable, str] = None, subgroups: int = None, cols: int = 3,
+                  include_dataset=True):
         if vis_type is None:
             vis_type = self.evaluation_metric
         if subgroups is None:
             subgroups = len(self.beam.subgroups)
         if hasattr(vis_type, '__call__'):
-            vis_type(self.dataset, self.beam.subgroups, self.target_columns, cols, subgroups)
+            vis_type(self.dataset, self.beam.subgroups, self.target_columns, self.settings['object_cols'], cols,
+                     subgroups, include_dataset)
         else:
             try:
-                visualizations[vis_type](self.dataset, self.beam.subgroups, self.target_columns, cols, subgroups)
-            except KeyError:
+                visualizations[vis_type](self.dataset, self.beam.subgroups, self.target_columns,
+                                         self.settings['object_cols'], cols, subgroups, include_dataset)
+            except KeyError as e:
                 raise ValueError(f"Nu such visualization: {vis_type}")
 
     def make_subgroups(self, cols: List[str]):

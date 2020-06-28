@@ -33,14 +33,14 @@ class Description:
             result, result2 = [], []
             for key, value in self.description.items():
                 if isinstance(value, list):
-                    result.append(f"{value[0]} < {key} <= {value[1]}")
+                    result.append(f"{int(value[0])} < {key} <= {int(value[1])}")
                 else:
                     result.append(f"{key} = {value}")
             length = 0
             result = " AND ".join(result).split(" ")
             for i, item in enumerate(result):
                 length += len(item)
-                if length > 20:
+                if length > 30:
                     result2.append("<br>")
                     length = 0
                 result2.append(item)

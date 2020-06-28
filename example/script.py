@@ -1,16 +1,15 @@
-import math
 import pandas as pd
-import plotly.graph_objects as go
-
-from plotly.subplots import make_subplots
 
 from emm import EMM
 
 
 if __name__ == '__main__':
-    df = pd.read_csv('data/titanic.csv')
-    clf = EMM(width=20, depth=1, evaluation_metric='distribution_cosine')
-    clf.search(df, target_cols=['Survived'], descriptive_cols=['Pclass', 'Sex', 'Age', 'SibSp', 'Parch',
-                                                               'Fare', 'Cabin', 'Embarked'])
-    clf.visualise(cols=3)
+    df = pd.read_csv('data/german-credit-scoring.csv', sep=";")
+    # df['Credit amount'], _ = pd.cut(df['Credit amount'], bins=10, retbins=True)
+    # df['Credit amount'] = df['Credit amount'].apply(lambda x: f"{int(x.left)} - {int(x.right)}")
+    df['Credit amount'] = df['Credit amount'].astype(int)
+    df['Duration in months'] = df['Duration in months'].astype(int)
+    clf = EMM(width=50, depth=2, evaluation_metric='heatmap', n_jobs=-1)
+    clf.search(df, target_cols=['Score', 'Savings account/bonds'])
+    clf.visualise(cols=2, subgroups=3, include_dataset=True)
 
