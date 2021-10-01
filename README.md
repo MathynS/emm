@@ -11,7 +11,7 @@ Best way to explain this technique is by an example. In this example the Windsor
 (https://vincentarelbundock.github.io/Rdatasets/doc/Ecdat/Housing.html).
 The table below shows this dataset:
 
-![](./src/dataset.PNG)
+![](media/dataset.PNG)
 
 Our assumption with domain knowledge about houses would be that the price increases if the lotsize increases.
 Exceptional subgroups would be subgroups for which the increase would be significantly lower or higher than for the 
@@ -25,7 +25,7 @@ Let's first look at the interaction between the target variables lotsize and pri
 In the figure below lotsize is plotted on the x-axis and price on the y-axis.
 Each dot represents a row in the dataset and the line is a linear regression through all the data points.
 
-![](./src/dataset_correlation.PNG)
+![](media/dataset_correlation.PNG)
 
 Now we run the EMM algorithm with our as model the (estimated) correlation coefficient between lotsize and price.
 We apply this model to the full dataset and every subgroup and score each subgroup by taking the absolute difference 
@@ -34,7 +34,7 @@ Exact formulas can be found in the appendix.
 Running the EMM algorithm with settings depth=3, width=10 and above model and metric results in the most 5 interesting 
 subgroups as visualized below:
 
-![](./src/subsets_correlation.PNG)
+![](media/subsets_correlation.PNG)
 
 This is just an example to show the application of EMM, many different models and evalutation metrics are possible to 
 mine datasets for interesting patterns.
