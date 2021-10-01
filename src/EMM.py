@@ -3,8 +3,8 @@ import logging
 import pandas as pd
 
 from copy import deepcopy
-from typing import Any, List, Optional, Union
-from multiprocessing import Manager, Process, Queue, cpu_count
+from typing import List, Optional, Union
+from multiprocessing import Process, cpu_count
 
 from beam import Beam
 from util import downsize
@@ -13,11 +13,12 @@ from evaluation_metrics import metrics, cleanup
 from visualization import visualizations
 from description import Description
 from workers import create_subgroups, evaluate_subgroups, beam_adder
+import multiproc
 
 
 # logger = logging.getLogger(__name__)
-evaluate_queue = Queue()
-add_queue = Queue()
+evaluate_queue = multiproc.Queue()
+add_queue = multiproc.Queue()
 
 
 class EMM:

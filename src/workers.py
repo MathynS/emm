@@ -2,7 +2,7 @@ import time
 import pandas as pd
 
 from copy import deepcopy
-from multiprocessing import Queue
+from multiproc import Queue
 
 from subgroup import Subgroup
 
