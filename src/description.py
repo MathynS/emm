@@ -1,10 +1,10 @@
 from typing import Union
-from itertools import chain
 
 
 class Description:
-
-    def __init__(self, attribute: str, value: Union[str, float, int, bool] = None):
+    def __init__(self, attribute: str,
+                 value: Union[str, float, int, bool] = None):
+        """Provides an implementation for the concept of a description."""
         if attribute == 'all':
             value = 'all'
         self.description = dict()

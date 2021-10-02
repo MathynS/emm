@@ -7,6 +7,11 @@ from description import Description
 class Subgroup:
 
     def __init__(self, data: pd.DataFrame, description: Description):
+        """Implementation of a subgroup.
+
+        Basically a pandas DataFrame with additional description. Also holds
+        other info such as score, target, and coverage for later calculations.
+        """
         self.data = data
         self.description = description
         self.score = None

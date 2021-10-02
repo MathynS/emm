@@ -22,7 +22,7 @@ class SharedCounter(object):
     first process. The solution is to use a multiprocessing.Lock to guarantee
     the atomicity of the modifications to Value.
     This class comes almost entirely from Eli Bendersky's blog:
-    http://eli.thegreenplace.net/2012/01/04/shared-counter-with-pythons-multiprocessing/
+    <https://eli.thegreenplace.net/2012/01/04/shared-counter-with-pythons-multiprocessing/>
     """
 
     def __init__(self, n=0):
@@ -65,9 +65,9 @@ class Queue(queues.Queue):
         self.size = SharedCounter(0)
 
     def __getstate__(self):
-        """Help to make MyQueue instance serializable.
+        """Help to make Queue instance serializable.
         Note that we record the parent class state, which is the state of the
-        actual queue, and the size of the queue, which is the state of MyQueue.
+        actual queue, and the size of the queue, which is the state of Queue.
         self.size is a SharedCounter instance. It is itself serializable.
         """
         return {

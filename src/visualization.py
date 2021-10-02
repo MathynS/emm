@@ -5,10 +5,47 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 
-def heatmap(dataset, subgroups, target_columns, translations, cols, group_size, include_dataset):
-    sets = [dataset] + subgroups[:group_size] if include_dataset else subgroups[:group_size]
-    titles = ['Dataset'] + [str(s.description) for s in subgroups[:group_size]] if include_dataset else \
-        [str(s.description) for s in subgroups[:group_size]]
+def setup_sets_titles (include_dataset, dataset, subgroups, group_size):
+    """Sets the sets and titles required by visualizer functions.
+
+    Returns: (tuple) the first element is the sets, the second element is the
+        titles.
+    """
+    if include_dataset:
+        sets = [dataset] + subgroups[:group_size]
+        titles = ['Dataset'] + [str(s.description)
+                                for s in subgroups[:group_size]]
+    else:
+        sets = subgroups[:group_size]
+        titles = [str(s.description) for s in subgroups[:group_size]]
+
+    return sets, titles
+
+
+def default_annotations(fig, target_columns):
+    """Provides default annotations for visualizations."""
+    annotations = [a.to_plotly_json() for a in fig["layout"]["annotations"]]
+    annotations.extend([
+        {"x": 0.5,
+         "y": -0.15,
+         "showarrow": False,
+         "text": target_columns[0],
+         "xref": "paper",
+         "yref": "paper"},
+        {'x': -0.07,
+         'y': 0.5,
+         'showarrow': False,
+         'text': target_columns[1],
+         'textangle': -90,
+         'xref': "paper",
+         'yref': "paper"}
+    ])
+
+
+def heatmap(dataset, subgroups, target_columns, translations, cols, group_size,
+            include_dataset: bool):
+    sets, titles = setup_sets_titles(include_dataset, dataset, subgroups,
+                                     group_size)
 
     fig = make_subplots(rows=math.ceil((group_size + 1) / cols), cols=cols,
                         subplot_titles=titles,
@@ -16,44 +53,27 @@ def heatmap(dataset, subgroups, target_columns, translations, cols, group_size, 
 
     for i, subgroup in enumerate(sets):
         fig.add_trace(
-            go.Heatmap(z=subgroup.target, x=translations[target_columns[1]], y=translations[target_columns[0]],
+            go.Heatmap(z=subgroup.target, x=translations[target_columns[1]],
+                       y=translations[target_columns[0]],
                        legendgroup=str(i)),
             row=math.floor(i / cols) + 1, col=(i % cols) + 1
         )
 
-    # fig.update_xaxes(range=[dataset.data[target_columns[0]].min(), dataset.data[target_columns[0]].max()])
-    # fig.update_yaxes(range=[dataset.data[target_columns[1]].min(), dataset.data[target_columns[1]].max()])
+    # fig.update_xaxes(range=[dataset.data[target_columns[0]].min(),
+    #                         dataset.data[target_columns[0]].max()])
+    # fig.update_yaxes(range=[dataset.data[target_columns[1]].min(),
+    #                         dataset.data[target_columns[1]].max()])
     fig.update_layout(
         showlegend=False
     )
-    annotations = [a.to_plotly_json() for a in fig["layout"]["annotations"]]
-    annotations.extend([
-        dict(
-            x=0.5,
-            y=-0.15,
-            showarrow=False,
-            text=target_columns[0],
-            xref="paper",
-            yref="paper"
-        ),
-        dict(
-            x=-0.07,
-            y=0.5,
-            showarrow=False,
-            text=target_columns[1],
-            textangle=-90,
-            xref="paper",
-            yref="paper"
-        )
-    ])
-    fig["layout"]["annotations"] = annotations
+    fig["layout"]["annotations"] = default_annotations(fig, target_columns)
     fig.show()
 
 
-def correlation(dataset, subgroups, target_columns, translations, cols, group_size, include_dataset):
-    sets = [dataset] + subgroups[:group_size] if include_dataset else subgroups[:group_size]
-    titles = ['Dataset'] + [str(s.description) for s in subgroups[:group_size]] if include_dataset else \
-        [str(s.description) for s in subgroups[:group_size]]
+def correlation(dataset, subgroups, target_columns, translations, cols,
+                group_size, include_dataset):
+    sets, titles = setup_sets_titles(include_dataset, dataset, subgroups,
+                                     group_size)
 
     fig = make_subplots(rows=math.ceil((group_size + 1) / cols), cols=cols,
                         subplot_titles=titles,
@@ -61,47 +81,32 @@ def correlation(dataset, subgroups, target_columns, translations, cols, group_si
 
     for i, subgroup in enumerate(sets):
         fig.add_trace(
-            go.Scatter(x=subgroup.data[target_columns[0]], y=subgroup.data[target_columns[1]], mode='markers'),
+            go.Scatter(x=subgroup.data[target_columns[0]],
+                       y=subgroup.data[target_columns[1]], mode='markers'),
             row=math.floor(i / cols) + 1, col=(i % cols) + 1
         )
         fig.add_trace(
-            go.Scatter(x=subgroup.data[target_columns[0]], y=(subgroup.data[target_columns[0]] * subgroup.target),
+            go.Scatter(x=subgroup.data[target_columns[0]],
+                       y=(subgroup.data[target_columns[0]] * subgroup.target),
                        mode='lines'),
             row=math.floor(i / cols) + 1, col=(i % cols) + 1
         )
-    fig.update_xaxes(range=[dataset.data[target_columns[0]].min(), dataset.data[target_columns[0]].max()])
-    fig.update_yaxes(range=[dataset.data[target_columns[1]].min(), dataset.data[target_columns[1]].max()])
+    fig.update_xaxes(range=[dataset.data[target_columns[0]].min(),
+                            dataset.data[target_columns[0]].max()])
+    fig.update_yaxes(range=[dataset.data[target_columns[1]].min(),
+                            dataset.data[target_columns[1]].max()])
     fig.update_layout(
         showlegend=False
     )
-    annotations = [a.to_plotly_json() for a in fig["layout"]["annotations"]]
-    annotations.extend([
-        dict(
-            x=0.5,
-            y=-0.15,
-            showarrow=False,
-            text=target_columns[0],
-            xref="paper",
-            yref="paper"
-        ),
-        dict(
-            x=-0.07,
-            y=0.5,
-            showarrow=False,
-            text=target_columns[1],
-            textangle=-90,
-            xref="paper",
-            yref="paper"
-        )
-    ])
-    fig["layout"]["annotations"] = annotations
+
+    fig["layout"]["annotations"] = default_annotations(fig, target_columns)
     fig.show()
 
 
-def distribution(dataset, subgroups, target_columns, translations, cols, group_size, include_dataset):
-    sets = [dataset] + subgroups[:group_size] if include_dataset else subgroups[:group_size]
-    titles = ['Dataset'] + [str(s.description) for s in subgroups[:group_size]] if include_dataset else \
-        [str(s.description) for s in subgroups[:group_size]]
+def distribution(dataset, subgroups, target_columns, translations, cols,
+                 group_size, include_dataset):
+    sets, titles = setup_sets_titles(include_dataset, dataset, subgroups,
+                                     group_size)
 
     fig = make_subplots(rows=math.ceil((group_size + 1) / cols), cols=cols,
                         subplot_titles=titles,
@@ -117,27 +122,8 @@ def distribution(dataset, subgroups, target_columns, translations, cols, group_s
     fig.update_layout(
         showlegend=False
     )
-    annotations = [a.to_plotly_json() for a in fig["layout"]["annotations"]]
-    annotations.extend([
-        dict(
-            x=0.5,
-            y=-0.15,
-            showarrow=False,
-            text=target_columns[0],
-            xref="paper",
-            yref="paper"
-        ),
-        dict(
-            x=-0.07,
-            y=0.5,
-            showarrow=False,
-            text='Frequency count',
-            textangle=-90,
-            xref="paper",
-            yref="paper"
-        )
-    ])
-    fig["layout"]["annotations"] = annotations
+
+    fig["layout"]["annotations"] = default_annotations(fig, target_columns)
     fig.show()
 
 

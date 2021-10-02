@@ -7,7 +7,8 @@ from multiproc import Queue
 from subgroup import Subgroup
 
 
-def create_subgroups(subgroup: Subgroup, column: str, queue: Queue, settings: dict):
+def create_subgroups(subgroup: Subgroup, column: str, queue: Queue,
+                     settings: dict):
     if column in subgroup.description:
         return
     data = subgroup.data
@@ -19,12 +20,17 @@ def create_subgroups(subgroup: Subgroup, column: str, queue: Queue, settings: di
             if queue.qsize() < 10:  # Reasonable size to keep in the beam
                 value = values.pop(0)
                 subset = data[data[column] == value]
-                queue.put(Subgroup(subset, deepcopy(subgroup.description).extend(column, value)))
+                new_sg = Subgroup(
+                    subset,
+                    deepcopy(subgroup.description).extend(column, value))
+                queue.put(new_sg)
             else:
+                # TODO figure out why there's this
                 time.sleep(.1)  # Else try again in a .1 second
     else:  # Float or Int
         if settings['bin_strategy'] == 'equidepth':
-            _, intervals = pd.qcut(data[column].tolist(), q=min(settings['n_bins'], len(values)),
+            _, intervals = pd.qcut(data[column].tolist(),
+                                   q=min(settings['n_bins'], len(values)),
                                    duplicates='drop', retbins=True)
         else:
             raise ValueError(f"Invalid bin strategy `{settings['strategy']}`")
@@ -33,14 +39,20 @@ def create_subgroups(subgroup: Subgroup, column: str, queue: Queue, settings: di
         while len(intervals) > 0:
             if queue.qsize() < 10:
                 upper_bound = intervals.pop(0)
-                subset = data[(data[column] > lower_bound) & (data[column] <= upper_bound)]
-                queue.put(Subgroup(subset, deepcopy(subgroup.description).extend(column, [lower_bound, upper_bound])))
+                subset = data[(data[column] > lower_bound)
+                              & (data[column] <= upper_bound)]
+                new_sg = Subgroup(
+                    subset,
+                    deepcopy(subgroup.description).extend(
+                        column, [lower_bound, upper_bound]))
+                queue.put(new_sg)
                 lower_bound = upper_bound
             else:
                 time.sleep(.1)  # Else try again in a .1 second
 
 
-def evaluate_subgroups(queue_from, queue_to, target_columns, dataset_target, score):
+def evaluate_subgroups(queue_from, queue_to, target_columns, dataset_target,
+                       score):
     while True:
         item = queue_from.get()
         if item == 'done':

@@ -17,7 +17,8 @@ def downsize(data):
     logging.info(f"Memory usage before downsizing {human_readable_size(data)}")
     translate = dict()
     for column in data.columns:
-        if data[column].dtype == object or data[column].dtype.name == 'category':
+        if data[column].dtype == object \
+                or data[column].dtype.name == 'category':
             data[column], translate[column] = pd.factorize(data[column])
         if data[column].dtype in [np.int8, np.int16, np.int32, np.int64]:
             data[column] = pd.to_numeric(data[column], downcast='unsigned')

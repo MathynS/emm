@@ -20,7 +20,10 @@ def cleanup():
 
 
 def entropy(subgroup_target, dataset_target):
-    """
+    """Calculates the entropy between a subgroup and the full dataset.
+
+    Implementation of \varphi_{ef} from "Exceptional Model Mining", W.
+    Duivesteijn (2016).
 
     Args:
         subgroup_target:
@@ -38,7 +41,8 @@ def entropy(subgroup_target, dataset_target):
 def distribution_cosine(subgroup_target, dataset_target, use_complement=False):
     global items, cache
     if len(subgroup_target.columns) > 1:
-        raise ValueError("Distribution cosine expect exactly 1 column as target variable")
+        raise ValueError("Distribution cosine expect exactly 1 column as "
+                         "target variable")
     column = list(subgroup_target.columns)[0]
     if cache is None:
         cache = dataset_target[column].value_counts()
@@ -53,7 +57,8 @@ def distribution_cosine(subgroup_target, dataset_target, use_complement=False):
 def WRAcc(subgroup_target, dataset_target, use_complement=False):
     global items, cache
     if len(subgroup_target.columns) > 1:
-        raise ValueError("Distribution cosine expect exactly 1 column as target variable")
+        raise ValueError("Distribution cosine expect exactly 1 column as "
+                         "target variable")
     column = list(subgroup_target.columns)[0]
     if cache is None:
         cache = dataset_target[column].value_counts()
@@ -79,7 +84,8 @@ def avg(collection):
 def r_hat(df, col_x, col_y):
     avg_x = avg(df[col_x])
     avg_y = avg(df[col_y])
-    top = df.apply(lambda row: (row[col_x] - avg_x) * (row[col_y] - avg_y), axis=1)
+    top = df.apply(lambda row: (row[col_x] - avg_x) * (row[col_y] - avg_y),
+                   axis=1)
     bottom_x = df.apply(lambda row: (row[col_x] - avg_x) ** 2, axis=1)
     bottom_y = df.apply(lambda row: (row[col_y] - avg_y) ** 2, axis=1)
     try:
@@ -91,7 +97,8 @@ def r_hat(df, col_x, col_y):
 def heatmap(subgroup_target, dataset_target, use_complement=False):
     global cache, items
     if len(subgroup_target.columns) != 2:
-        raise ValueError("Correlation metric expects exactly 2 columns as target variables")
+        raise ValueError("Correlation metric expects exactly 2 columns as "
+                         "target variables")
     x_col, y_col = list(subgroup_target.columns)
 
     if cache is None:
@@ -115,7 +122,8 @@ def correlation(subgroup_target, dataset_target, use_complement=False):
     """
     global cache
     if len(subgroup_target.columns) != 2:
-        raise ValueError("Correlation metric expects exactly 2 columns as target variables")
+        raise ValueError("Correlation metric expects exactly 2 columns as "
+                         "target variables")
     x_col, y_col = list(subgroup_target.columns)
     if cache is None:
         cache = r_hat(dataset_target, x_col, y_col)
@@ -131,7 +139,8 @@ def regression(subgroup_target, dataset_target, use_complement=False):
     if len(subgroup_target) < 20:
         return 0, None
     if len(subgroup_target.columns) != 2:
-        raise ValueError("Correlation metric expects exactly 2 columns as target variables")
+        raise ValueError("Correlation metric expects exactly 2 columns as "
+                         "target variables")
     x_col, y_col = list(subgroup_target.columns)
     if cache is None:
         est2 = sm.OLS(dataset_target[y_col], dataset_target[x_col])

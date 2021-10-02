@@ -7,41 +7,64 @@ from subgroup import Subgroup
 
 
 class Beam:
-
     def __init__(self, subgroup: Subgroup, settings: dict):
+        """Beam class to perform beam search on subgroups.
+
+        Reference implementation of Algorithm 1 from "Exceptional Model Mining"
+        by W. Duivesteijn (2016).
+
+        Args:
+            subgroup: The dataset or subgroup for which a beam search should be
+                performed on.
+            settings: Accepts the following keys: "width", "candidate_size",
+                "strategy". "width" is an int, "candidate_size" is an int and
+                defaults to "width" ** 2, "strategy" is a string of either
+                "maximize" or "minimize".
+        """
         self.subgroups = [subgroup]
         self.candidates = []
         self.items = 1
         self.max_items = settings['width']
         try:
             self.candidate_size = int(settings['candidate_size'])
-        except (KeyError, TypeError):
+        except KeyError:
             self.candidate_size = settings['width'] ** 2
         self.strategy = settings['strategy']
         self.min_score = None
         self.scores = []
 
     def add(self, subgroup: Subgroup):
-        if len(self.candidates) < self.candidate_size:
+        def update():
+            """Made its own function because this is reused in both branches."""
             self.candidates.append(subgroup)
             self.scores.append(subgroup.score)
-            self.min_score = min(self.scores) if self.strategy == 'maximize' else max(self.scores)
-        elif (self.strategy == 'maximize' and subgroup.score > self.min_score) or \
-                (self.strategy == 'minimize' and subgroup.score < self.min_score):
+            if self.strategy == "maximize":
+                self.min_score = min(self.scores)
+            else:
+                self.min_score = max(self.scores)
+
+        if len(self.candidates) < self.candidate_size:
+            update()
+        elif (self.strategy == 'maximize'
+              and subgroup.score > self.min_score) or \
+                (self.strategy == 'minimize'
+                 and subgroup.score < self.min_score):
             idx = self.scores.index(self.min_score)
             del self.scores[idx]
             del self.candidates[idx]
-            self.candidates.append(subgroup)
-            self.scores.append(subgroup.score)
-            self.min_score = min(self.scores) if self.strategy == 'maximize' else max(self.scores)
+            update()
 
     def sort(self, attribute: str = 'score') -> None:
         if attribute == 'score':
-            self.candidates.sort(key=lambda x: x.score, reverse=(self.strategy == 'maximize'))
-            self.subgroups.sort(key=lambda x: x.score, reverse=(self.strategy == 'maximize'))
+            self.candidates.sort(key=lambda x: x.score,
+                                 reverse=(self.strategy == 'maximize'))
+            self.subgroups.sort(key=lambda x: x.score,
+                                reverse=(self.strategy == 'maximize'))
         elif attribute == 'coverage':
             self.candidates.sort(
-                key=lambda x: x.score * (x.coverage if (self.strategy == 'maximize') else (1 - x.coverage)),
+                key=lambda x: x.score * (x.coverage
+                                         if (self.strategy == 'maximize')
+                                         else (1 - x.coverage)),
                 reverse=(self.strategy == 'maximize'))
         else:
             raise ValueError("Invalid sort attribute")
@@ -51,12 +74,19 @@ class Beam:
         if self.candidate_size > self.max_items:
             index = np.array([])
             for subgroup in self.candidates:
-                subgroup.coverage = 1 - (np.intersect1d(subgroup.data.index.values, index).size / subgroup.data.index.size)
-                index = np.unique(np.concatenate((index, subgroup.data.index.values)))
+                subgroup.coverage = 1 - (
+                        np.intersect1d(subgroup.data.index.values, index).size
+                        / subgroup.data.index.size)
+                index = np.unique(
+                    np.concatenate((index, subgroup.data.index.values)))
             self.sort(attribute='coverage')
         self.subgroups = self.candidates[:self.max_items]
         self.scores = [s.score for s in self.subgroups]
-        self.min_score = min(self.scores) if self.strategy == 'maximize' else max(self.scores)
+
+        if self.strategy == "maximize":
+            self.min_score = min(self.scores)
+        else:
+            self.min_score = max(self.scores)
 
     def decrypt_descriptions(self, translation):
         for s in self.subgroups:
