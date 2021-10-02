@@ -130,8 +130,11 @@ class EMM:
                                          self.target_columns,
                                          self.settings['object_cols'], cols,
                                          subgroups, include_dataset)
-            except KeyError:
-                raise ValueError(f"No such visualization: {vis_type}")
+            except KeyError as e:
+                if e == vis_type:
+                    raise ValueError(f"No such visualization: {vis_type}")
+                else:
+                    raise ValueError(e)
 
     def make_subgroups(self, cols: List[str]):
         beam_workers = []
@@ -150,3 +153,14 @@ class EMM:
         beam_adder(add_queue, self.beam, self.n_jobs)
         for w in beam_workers:
             w.join()
+
+
+if __name__ == "__main__":
+    # DEBUG Debugging code to test EMM with Housing
+    df = pd.read_csv('../example/data/Housing.csv')
+    clf = EMM(width=40, depth=1, evaluation_metric='distribution_cosine')
+
+    print(clf.evaluation_metric)
+    clf.search(df, target_cols=['price'])
+
+    clf.visualise(subgroups=5, cols=3)

@@ -1,11 +1,10 @@
 import math
-import numpy as np
 import plotly.graph_objects as go
 
 from plotly.subplots import make_subplots
 
 
-def setup_sets_titles (include_dataset, dataset, subgroups, group_size):
+def setup_sets_titles(include_dataset, dataset, subgroups, group_size):
     """Sets the sets and titles required by visualizer functions.
 
     Returns: (tuple) the first element is the sets, the second element is the
@@ -32,14 +31,19 @@ def default_annotations(fig, target_columns):
          "text": target_columns[0],
          "xref": "paper",
          "yref": "paper"},
-        {'x': -0.07,
-         'y': 0.5,
-         'showarrow': False,
-         'text': target_columns[1],
-         'textangle': -90,
-         'xref': "paper",
-         'yref': "paper"}
     ])
+    if len(target_columns) > 1:
+        for i in range(len(target_columns) - 1):
+            annotations.extend([
+                {'x': -0.07,
+                 'y': 0.5,
+                 'showarrow': False,
+                 'text': target_columns[i + 1],
+                 'textangle': -90,
+                 'xref': "paper",
+                 'yref': "paper"}
+            ])
+    return annotations
 
 
 def heatmap(dataset, subgroups, target_columns, translations, cols, group_size,
@@ -113,9 +117,10 @@ def distribution(dataset, subgroups, target_columns, translations, cols,
                         vertical_spacing=0.3)
 
     for i, subgroup in enumerate(sets):
-        X = [translations[target_columns[0]][x] for x in subgroup.target.index]
+        # X = [target_columns[0][x] for x in subgroup.target.index]
         fig.add_trace(
-            go.Bar(x=X, y=subgroup.target.values),
+            go.Bar(x=subgroup.data[target_columns[0]],
+                   y=subgroup.target.values),
             row=math.floor(i / cols) + 1, col=(i % cols) + 1
         )
     # fig.update_yaxes(range=[0, dataset.target.values.max()])
@@ -127,10 +132,7 @@ def distribution(dataset, subgroups, target_columns, translations, cols,
     fig.show()
 
 
-visualizations = dict(
-    correlation=correlation,
-    distribution_cosine=distribution,
-    regression=correlation,
-    WRAcc=distribution,
-    heatmap=heatmap
-)
+visualizations = {'correlation': correlation,
+                  'distribution_cosine': distribution,
+                  'regression': correlation, 'WRAcc': distribution,
+                  'heatmap': heatmap}
