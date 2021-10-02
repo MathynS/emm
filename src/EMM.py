@@ -6,7 +6,7 @@ from typing import List, Optional, Union
 from multiprocessing import Process, cpu_count
 
 from beam import Beam
-from util import downsize
+from util import downsize, is_notebook
 from subgroup import Subgroup
 from evaluation_metrics import metrics, cleanup
 from visualization import visualizations
@@ -14,6 +14,10 @@ from description import Description
 from workers import create_subgroups, evaluate_subgroups, beam_adder
 import multiproc
 
+if is_notebook():
+    from tqdm.notebook import tqdm
+else:
+    from tqdm import tqdm
 
 # logger = logging.getLogger(__name__)
 evaluate_queue = multiproc.Queue()
@@ -35,6 +39,7 @@ class EMM:
             self.n_jobs = cpu_count()
         else:
             self.n_jobs = min(n_jobs, cpu_count())
+        print(f"Running with {self.n_jobs} jobs...")
         if hasattr(evaluation_metric, '__call__'):
             self.evaluation_function = evaluation_metric
         else:
@@ -55,7 +60,7 @@ class EMM:
         self.dataset = None
 
     def __setattr__(self, name, value):
-        if name in ['depth', 'n_jobs'] and not isinstance(value[name], int):
+        if name in ['depth', 'n_jobs'] and not isinstance(value, int):
             raise TypeError(f"Invalid type for setting {name}: only integers "
                             f"are allowed")
         if name == 'settings':
@@ -99,10 +104,11 @@ class EMM:
                              "dataset")
         self.dataset_target = data[target_cols]
         self.target_columns = target_cols
-        while self.depth > 0:
+        for _ in tqdm(range(self.depth)):
             self.make_subgroups(descriptive_cols)
             self.depth -= 1
             self.beam.select_cover_based()
+
         self.beam.decrypt_descriptions(translations)
         self.beam.print()
         cleanup()
@@ -138,6 +144,7 @@ class EMM:
         for subgroup in self.beam.subgroups:
             for col in cols:
                 create_subgroups(subgroup, col, evaluate_queue, self.settings)
+
         for _ in range(self.n_jobs):
             evaluate_queue.put('done')
         beam_adder(add_queue, self.beam, self.n_jobs)

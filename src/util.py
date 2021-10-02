@@ -1,6 +1,7 @@
 import logging
 import numpy as np
 import pandas as pd
+import sys
 
 
 def human_readable_size(data):
@@ -26,3 +27,15 @@ def downsize(data):
             data[column] = pd.to_numeric(data[column], downcast='float')
     logging.info(f"Memory usage after downsizing {human_readable_size(data)}")
     return data, translate
+
+
+def is_notebook():
+    """Determines if the program is running inside a Jupyter Notebook.
+
+    Shamelessly copy-pasted from:
+    <https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook>
+
+    Returns: (bool) True if the module is running in an IPython kernel. False
+        otherwise.
+    """
+    return 'IPython' in sys.modules

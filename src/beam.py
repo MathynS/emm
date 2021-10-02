@@ -24,11 +24,17 @@ class Beam:
         self.subgroups = [subgroup]
         self.candidates = []
         self.items = 1
-        self.max_items = settings['width']
+
+        # Make sure that candidate size has a value. It may sometimes be None
+        # or not exist in which case a default value is assigned.
         try:
-            self.candidate_size = int(settings['candidate_size'])
+            if settings['candidate_size'] is None:
+                settings['candidate_size'] = settings['width'] ** 2
         except KeyError:
-            self.candidate_size = settings['width'] ** 2
+            settings['candidate_size'] = settings['width'] ** 2
+
+        self.max_items = settings['width']
+        self.candidate_size = int(settings['candidate_size'])
         self.strategy = settings['strategy']
         self.min_score = None
         self.scores = []

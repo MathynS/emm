@@ -1,5 +1,5 @@
 import pandas as pd
-from emm import EMM
+from EMM import EMM
 
 if __name__ == '__main__':
     # df = pd.read_csv('data/Housing.csv', index_col=0)

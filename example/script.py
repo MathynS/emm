@@ -1,6 +1,6 @@
 import pandas as pd
 
-from emm import EMM
+from EMM import EMM
 
 
 if __name__ == '__main__':
