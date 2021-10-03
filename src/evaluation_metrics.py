@@ -22,15 +22,16 @@ def cleanup():
 def entropy(subgroup_target, dataset_target):
     """Calculates the entropy between a subgroup and the full dataset.
 
-    Implementation of \varphi_{ef} from "Exceptional Model Mining", W.
-    Duivesteijn (2016).
+    Implementation of \varphi_{ef} in chapter 3 of "Exceptional Model Mining",
+    W. Duivesteijn (2016).
 
     Args:
-        subgroup_target:
-        dataset_target:
+        subgroup_target (pd.DataFrame): The subgroup currently being evaluated.
+        dataset_target (pd.DataFrame): The full dataset for which the subgroup
+            is to be evaluated against.
 
     Returns:
-
+        float: Score as evaluated according to the entropy formula.
     """
     n_c = max(1, len(dataset_target) - len(subgroup_target))
     n = len(subgroup_target)
@@ -39,6 +40,18 @@ def entropy(subgroup_target, dataset_target):
 
 
 def distribution_cosine(subgroup_target, dataset_target, use_complement=False):
+    """Distributed cosine quality measure.
+
+    Args:
+        subgroup_target (pd.DataFrame): The subgroup currently being evaluated.
+        dataset_target (pd.DataFrame): The full dataset for which the subgroup
+            is to be evaluated against.
+        use_complement (bool): Whether or not to evaluate against the complement
+            of the subgroup. Use of the complement is currently unsupported.
+
+    Returns:
+        (float, float): Normalized entropy score and the target score.
+    """
     global items, cache
     if len(subgroup_target.columns) > 1:
         raise ValueError("Distribution cosine expect exactly 1 column as "
@@ -50,11 +63,28 @@ def distribution_cosine(subgroup_target, dataset_target, use_complement=False):
     values = subgroup_target[column].value_counts()
     target = deepcopy(items)
     target[values.index] = values.values
-    # return math.sqrt(len(subgroup_target)) * cosine(target.values, cache.values), target
-    return entropy(subgroup_target, dataset_target) * cosine(target.values, cache.values), target
+    return (entropy(subgroup_target, dataset_target)
+            * cosine(target.values, cache.values),
+            target)
 
 
 def WRAcc(subgroup_target, dataset_target, use_complement=False):
+    """Implementation of Weighted Relative Accuracy.
+
+    This is an implementation of the canonical subgroup discovery quality
+    measure presented in "ROC ‘n’ Rule Learning – Towards a Better Understanding
+    of Covering Algorithms", J. Fürnkranz, P. A. Flach (2005).
+
+    Args:
+        subgroup_target (pd.DataFrame): The subgroup currently being evaluated.
+        dataset_target (pd.DataFrame): The full dataset for which the subgroup
+            is to be evaluated against.
+        use_complement (bool): Whether or not to evaluate against the complement
+            of the subgroup. Use of the complement is currently unsupported.
+
+    Returns:
+        (float, float): WRAcc score and the target score.
+    """
     global items, cache
     if len(subgroup_target.columns) > 1:
         raise ValueError("Distribution cosine expect exactly 1 column as "
@@ -82,6 +112,17 @@ def avg(collection):
 
 
 def r_hat(df, col_x, col_y):
+    """Implementation of \hat{r} for \varphi_{scd}.
+
+    Args:
+        df (pd.DataFrame): Complete dataset DataFrame to be evaluated.
+        col_x (str): Name of the column representing the "x" variable.
+        col_y (str): Name of the column representing the "y" variable.
+
+    Returns:
+        float: The calculated r_hat value. If both x.sum() and y.sum() are equal
+            to 0, returns 0.
+    """
     avg_x = avg(df[col_x])
     avg_y = avg(df[col_y])
     top = df.apply(lambda row: (row[col_x] - avg_x) * (row[col_y] - avg_y),
@@ -95,30 +136,57 @@ def r_hat(df, col_x, col_y):
 
 
 def heatmap(subgroup_target, dataset_target, use_complement=False):
+    """Calculates quality measure using a heatmap metric.
+
+    The actual explanation of this quality measure is unknown and doesn't seem
+    to be explained in "Exceptional Model Mining", W. Duivesteijn (2016).
+
+    Args:
+        subgroup_target (pd.DataFrame): The subgroup currently being evaluated.
+        dataset_target (pd.DataFrame): The full dataset for which the subgroup
+            is to be evaluated against.
+        use_complement (bool): Whether or not to evaluate against the complement
+            of the subgroup. Use of the complement is currently unsupported.
+
+    Returns:
+        (float, float): Normalized entropy score and the r_hat score.
+    """
     global cache, items
     if len(subgroup_target.columns) != 2:
-        raise ValueError("Correlation metric expects exactly 2 columns as "
+        raise ValueError("heatmap metric expects exactly 2 columns as "
                          "target variables")
     x_col, y_col = list(subgroup_target.columns)
 
     if cache is None:
-        cache = pd.pivot_table(dataset_target, values=x_col, index=x_col, fill_value=0,
-                               columns=y_col, aggfunc=lambda x: len(x)).stack()
+        cache = pd.pivot_table(dataset_target, values=x_col, index=x_col,
+                               fill_value=0, columns=y_col,
+                               aggfunc=lambda x: len(x)).stack()
         items = pd.Series([0] * len(cache.index), index=cache.index)
-    pv = pd.pivot_table(subgroup_target, values=x_col, index=x_col, fill_value=0,
-                        columns=y_col, aggfunc=lambda x: len(x)).stack()
+    pv = pd.pivot_table(subgroup_target, values=x_col, index=x_col,
+                        fill_value=0, columns=y_col,
+                        aggfunc=lambda x: len(x)).stack()
     target = deepcopy(items)
     target[pv.index] = pv.values
-    return entropy(subgroup_target, dataset_target) * cosine(target.values, cache.values), target.unstack()
+    return  (entropy(subgroup_target, dataset_target)
+             * cosine(target.values, cache.values),
+             target.unstack())
 
 
 def correlation(subgroup_target, dataset_target, use_complement=False):
-    """
+    """Calculates quality measure using Significance of Correlation Difference.
 
-    :param subgroup_target:
-    :param dataset_target:
-    :param use_complement:
-    :return:
+    Complete formulation is described in Chapter 4 of "Exceptional Model
+    Mining", W. Duivesteijn (2016).
+
+    Args:
+        subgroup_target (pd.DataFrame): The subgroup currently being evaluated.
+        dataset_target (pd.DataFrame): The full dataset for which the subgroup
+            is to be evaluated against.
+        use_complement (bool): Whether or not to evaluate against the complement
+            of the subgroup. Use of the complement is currently unsupported.
+
+    Returns:
+        (float, float): Normalized entropy score and the r_hat score.
     """
     global cache
     if len(subgroup_target.columns) != 2:
@@ -157,10 +225,33 @@ def regression(subgroup_target, dataset_target, use_complement=False):
     return entropy(subgroup_target, dataset_target) * abs(coef - cache), coef
 
 
-metrics = dict(
-    correlation=correlation,
-    distribution_cosine=distribution_cosine,
-    regression=regression,
-    WRAcc=WRAcc,
-    heatmap=heatmap
-)
+def covariance(subgroup_target, dataset_target, use_complement=False):
+    """Quality measure based on covariance matrix distance.
+
+    Calculates the L2 norm between the covariance matrices of the subgroup and
+    the dataset.
+
+    Args:
+        subgroup_target (pd.DataFrame): The subgroup currently being evaluated
+        dataset_target (pd.DataFrame): The full dataset for which the subgroup
+            is to be evaluated against
+        use_complement (bool): Whether or not to evaluate against the complement
+            of the subgroup. Use of the complement is currently unsupported.
+
+    Returns:
+        (float, float): The score and the target. The score is the normalized
+            entropy value and the target uses the L2 norm.
+
+    """
+    global cache
+
+    if cache is None:
+        pass
+
+
+metrics = {'correlation': correlation,
+           'distribution_cosine': distribution_cosine,
+           'regression': regression,
+           'WRAcc': WRAcc,
+           'heatmap': heatmap,
+           'covariance': covariance}
