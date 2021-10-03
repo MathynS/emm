@@ -2,6 +2,7 @@ import math
 import warnings
 import pandas as pd
 import statsmodels.api as sm
+import numpy as np
 
 from copy import deepcopy
 from scipy.spatial.distance import cosine
@@ -112,7 +113,7 @@ def avg(collection):
 
 
 def r_hat(df, col_x, col_y):
-    """Implementation of \hat{r} for \varphi_{scd}.
+    """Implementation of r_hat for varphi_{scd}.
 
     Args:
         df (pd.DataFrame): Complete dataset DataFrame to be evaluated.
@@ -167,9 +168,9 @@ def heatmap(subgroup_target, dataset_target, use_complement=False):
                         aggfunc=lambda x: len(x)).stack()
     target = deepcopy(items)
     target[pv.index] = pv.values
-    return  (entropy(subgroup_target, dataset_target)
-             * cosine(target.values, cache.values),
-             target.unstack())
+    return (entropy(subgroup_target, dataset_target)
+            * cosine(target.values, cache.values),
+            target.unstack())
 
 
 def correlation(subgroup_target, dataset_target, use_complement=False):
@@ -228,8 +229,15 @@ def regression(subgroup_target, dataset_target, use_complement=False):
 def covariance(subgroup_target, dataset_target, use_complement=False):
     """Quality measure based on covariance matrix distance.
 
-    Calculates the L2 norm between the covariance matrices of the subgroup and
-    the dataset.
+    Calculates the Frobenius norm between the column covariances of the target
+    variables in both the subgroup and the dataset.
+
+    The score is the normalized Frobenius distance between the difference of
+    the column-wise covariances in the subgroup compared to the dataset. The
+    target is the normalized Frobenius distance of the column-wise
+    covariances in the subgroup from the origin. All values are normalized by
+    the Frobenius distance of the column-wise covariances of the complete
+    dataset from the origin.
 
     Args:
         subgroup_target (pd.DataFrame): The subgroup currently being evaluated
@@ -239,14 +247,27 @@ def covariance(subgroup_target, dataset_target, use_complement=False):
             of the subgroup. Use of the complement is currently unsupported.
 
     Returns:
-        (float, float): The score and the target. The score is the normalized
-            entropy value and the target uses the L2 norm.
-
+        (float, float): The score and the target.
     """
     global cache
 
     if cache is None:
         pass
+
+    subgroup_cov = subgroup_target.cov()
+    dataset_cov = dataset_target.cov()
+
+    cov_diff = subgroup_cov - dataset_cov
+
+    normalizer = np.linalg.norm(dataset_cov)
+
+    if normalizer == 0:
+        return 0., 0.
+
+    score = np.linalg.norm(cov_diff) / normalizer
+    target = np.linalg.norm(subgroup_cov) / normalizer
+
+    return score, target
 
 
 metrics = {'correlation': correlation,
