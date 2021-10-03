@@ -39,7 +39,8 @@ class EMM:
             self.n_jobs = cpu_count()
         else:
             self.n_jobs = min(n_jobs, cpu_count())
-        print(f"Running with {self.n_jobs} jobs...")
+        print(f"Running with {self.n_jobs} "
+              f"job{'s' if self.n_jobs > 1 else ''}...")
         if hasattr(evaluation_metric, '__call__'):
             self.evaluation_function = evaluation_metric
         else:
@@ -157,10 +158,10 @@ class EMM:
 
 if __name__ == "__main__":
     # DEBUG Debugging code to test EMM with Housing
-    df = pd.read_csv('../example/data/Housing.csv')
-    clf = EMM(width=40, depth=1, evaluation_metric='distribution_cosine')
+    df = pd.read_csv('../example/data/Mini-Housing.csv')
+    clf = EMM(width=40, depth=1, evaluation_metric='correlation',
+              n_jobs=1)
 
-    print(clf.evaluation_metric)
-    clf.search(df, target_cols=['price'])
+    clf.search(df, target_cols=['price', 'lotsize'])
 
     clf.visualise(subgroups=5, cols=3)
