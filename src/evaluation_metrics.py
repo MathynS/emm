@@ -264,8 +264,8 @@ def covariance(subgroup_target, dataset_target, use_complement=False):
     if normalizer == 0:
         return 0., 0.
 
-    score = np.linalg.norm(cov_diff) / normalizer
-    target = np.linalg.norm(subgroup_cov) / normalizer
+    score = abs(np.linalg.norm(cov_diff) / normalizer)
+    target = abs(np.linalg.norm(subgroup_cov) / normalizer)
 
     return score, target
 
