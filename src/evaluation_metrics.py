@@ -254,6 +254,11 @@ def covariance(subgroup_target, dataset_target, use_complement=False):
     if cache is None:
         pass
 
+    if subgroup_target.shape[0] <= 1:
+        # Catches edge cases where the subgroup consists of only one element
+        # and thus has no variance.
+        return 0., 0.
+
     subgroup_cov = subgroup_target.cov()
     dataset_cov = dataset_target.cov()
 
@@ -264,8 +269,15 @@ def covariance(subgroup_target, dataset_target, use_complement=False):
     if normalizer == 0:
         return 0., 0.
 
-    score = abs(np.linalg.norm(cov_diff) / normalizer)
-    target = abs(np.linalg.norm(subgroup_cov) / normalizer)
+    # Multiply by a log function such that bigger subgroups are preferred
+    # Constants chosen by empirical experiments
+    subgroup_size = float(subgroup_target.shape[0]) \
+                    / float(dataset_target.shape[0])
+    mult = 1.2851 * (math.log(0.5 * subgroup_size + 0.1, 10) + 1)
+    # mult= float(subgroup_size)
+
+    score = mult * (abs(np.linalg.norm(cov_diff) / normalizer))
+    target = mult * (abs(np.linalg.norm(subgroup_cov) / normalizer))
 
     return score, target
 
