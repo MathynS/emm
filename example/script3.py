@@ -11,10 +11,10 @@ if __name__ == '__main__':
     target_columns = ['lotsize', 'price']
     # clf = EMM(width=10, depth=1, evaluation_metric='covariance',
     #           n_jobs=1, log_level=2)
-    clf = EMM(width=20, depth=4, evaluation_metric='covariance',
-              log_level=2)
+    clf = EMM(width=20, depth=1, evaluation_metric='correlation',
+              log_level=2, n_jobs=1)
     clf.search(df, target_cols=target_columns)
-    clf = EMM(width=20, depth=4, evaluation_metric='correlation',
-              log_level=2)
+    # clf = EMM(width=20, depth=4, evaluation_metric='correlation',
+    #           log_level=2)
     clf.search(df, target_cols=target_columns)
-    # clf.visualise(cols=2, subgroups=8, include_dataset=True)
+    clf.visualise(cols=2, subgroups=5, include_dataset=True)
