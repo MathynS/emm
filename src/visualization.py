@@ -207,19 +207,16 @@ class Visualize:
         fig.update_layout(scene={'xaxis_title': self.target_columns[0],
                                  'yaxis_title': self.target_columns[1],
                                  'zaxis_title': self.target_columns[2]})
-        # fig.update_xaxes(title=self.target_columns[0],
-        #                  range=self.ranges['x'])
-        # fig.update_yaxes(title=self.target_columns[1],
-        #                  range=self.ranges['y'])
 
         fig.show()
 
     def visualize(self):
         fig = make_subplots(rows=self.rows,
                             cols=self.cols,
-                            subplot_titles=self.titles)
+                            subplot_titles=self.titles,
+                            row_heights=[self.height] * self.rows)
 
-        if self.eval_metric.name == "Heatmap":
+        if self.eval_metric.name() == "Heatmap":
             self._heatmap_visualize(fig)
         elif len(self.target_columns) == 1:
             self._one_dim_visualize(fig)

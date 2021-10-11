@@ -400,12 +400,11 @@ class Covariance(EvaluationMetric):
         if normalizer == 0:
             return 0., 0.
 
-        # Multiply by a log function such that bigger subgroups are preferred
+        # Multiply by a polynomial such that bigger subgroups are preferred
         # Constants chosen by empirical experiments
         subgroup_size = float(subgroup_target.shape[0])
         subgroup_size /= float(dataset_target.shape[0])
-        # mult = 1.2851 * (math.log(0.5 * subgroup_size + 0.1, 10) + 1)
-        mult = float(subgroup_size)
+        mult = (-(.98 * subgroup_size - .98) ** 2) + 1
 
         score = mult * (abs(np.linalg.norm(cov_diff) / normalizer))
         target = mult * (abs(np.linalg.norm(subgroup_cov) / normalizer))

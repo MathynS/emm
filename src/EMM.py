@@ -8,7 +8,7 @@ from multiprocessing import Process, cpu_count
 from beam import Beam
 from util import downsize, is_notebook
 from subgroup import Subgroup
-from evaluation_metrics import EvaluationMetric, cleanup
+from evaluation_metrics import EvaluationMetric, Correlation, cleanup
 from visualization import Visualize
 from description import Description
 from workers import create_subgroups, evaluate_subgroups, beam_adder
@@ -154,9 +154,9 @@ class EMM:
 if __name__ == "__main__":
     # DEBUG Debugging code to test EMM with Housing
     df = pd.read_csv('../example/data/Mini-Housing.csv')
-    clf = EMM(width=40, depth=1, evaluation_metric='correlation',
+    clf = EMM(width=40, depth=1, evaluation_metric=Correlation(),
               n_jobs=1)
 
     clf.search(df, target_cols=['price', 'lotsize'])
 
-    clf.visualise(subgroups=5, cols=3)
+    clf.visualize(subgroups=5, cols=3)
