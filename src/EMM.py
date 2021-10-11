@@ -8,8 +8,8 @@ from multiprocessing import Process, cpu_count
 from beam import Beam
 from util import downsize, is_notebook
 from subgroup import Subgroup
-from evaluation_metrics import metrics, cleanup
-from visualization import visualizations
+from evaluation_metrics import EvaluationMetric, cleanup
+from visualization import Visualize
 from description import Description
 from workers import create_subgroups, evaluate_subgroups, beam_adder
 import multiproc
@@ -27,7 +27,7 @@ add_queue = multiproc.Queue()
 class EMM:
 
     def __init__(self, width: int, depth: int,
-                 evaluation_metric: Union[str, callable], n_jobs: int = -1,
+                 evaluation_metric: EvaluationMetric, n_jobs: int = -1,
                  strategy: str = 'maximize', n_bins: int = 10,
                  bin_strategy: Optional[str] = 'equidepth',
                  candidate_size: int = None, log_level=50):
@@ -41,13 +41,6 @@ class EMM:
             self.n_jobs = min(n_jobs, cpu_count())
         print(f"Running with {self.n_jobs} "
               f"job{'s' if self.n_jobs > 1 else ''}...")
-        if hasattr(evaluation_metric, '__call__'):
-            self.evaluation_function = evaluation_metric
-        else:
-            try:
-                self.evaluation_function = metrics[evaluation_metric]
-            except KeyError:
-                raise ValueError(f"Nu such metric: {evaluation_metric}")
         self.settings = dict(
             strategy=strategy,
             width=width,
@@ -91,8 +84,9 @@ class EMM:
         data, translations = downsize(deepcopy(data))
         self.settings['object_cols'] = translations
         self.dataset = Subgroup(data, Description('all'))
-        _, self.dataset.target = self.evaluation_function(data[target_cols],
-                                                          data[target_cols])
+        _, self.dataset.target = self.evaluation_metric.calculate(
+            data[target_cols], data[target_cols]
+        )
         self.beam = Beam(self.dataset, self.settings)
         target_cols = list(target_cols,)
         if descriptive_cols is None:
@@ -114,35 +108,36 @@ class EMM:
         self.beam.print()
         cleanup()
 
-    def visualise(self, vis_type: Union[callable, str] = None,
-                  subgroups: int = None, cols: int = 3,
-                  include_dataset=True):
-        if vis_type is None:
-            vis_type = self.evaluation_metric
-        if subgroups is None:
-            subgroups = len(self.beam.subgroups)
-        if hasattr(vis_type, '__call__'):
-            vis_type(self.dataset, self.beam.subgroups, self.target_columns,
-                     self.settings['object_cols'], cols, subgroups,
-                     include_dataset)
-        else:
-            try:
-                visualizations[vis_type](self.dataset, self.beam.subgroups,
-                                         self.target_columns,
-                                         self.settings['object_cols'], cols,
-                                         subgroups, include_dataset)
-            except KeyError as e:
-                if e == vis_type:
-                    raise ValueError(f"No such visualization: {vis_type}")
-                else:
-                    raise ValueError(e)
+    def visualize(self, subgroups: int = None, cols: int = 3, height: int = 460,
+                  include_dataset: bool =True):
+        """Calls the appropriate visualization function.
+
+        Args:
+            subgroups: Number of subgroups to visualize.
+            cols: Number of columns to display.
+            height: Height of each plot in pixels.
+            include_dataset: Show the full dataset as its own plot. Shows it if
+                true.
+        """
+        subgroups = len(self.beam.subgroups) if subgroups is None else subgroups
+        vis = Visualize(eval_metric=self.evaluation_metric,
+                        dataset=self.dataset,
+                        subgroups=self.beam.subgroups,
+                        target_columns=self.target_columns,
+                        translations=self.settings['object_cols'],
+                        cols=cols,
+                        group_size=subgroups,
+                        include_dataset=include_dataset,
+                        height=height)
+        vis.visualize()
 
     def make_subgroups(self, cols: List[str]):
         beam_workers = []
         for _ in range(self.n_jobs):
             w = Process(target=evaluate_subgroups,
                         args=(evaluate_queue, add_queue, self.target_columns,
-                              self.dataset_target, self.evaluation_function))
+                              self.dataset_target,
+                              self.evaluation_metric.calculate))
             w.start()
             beam_workers.append(w)
         for subgroup in self.beam.subgroups:
